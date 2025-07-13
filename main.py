@@ -1,13 +1,15 @@
+"""Logic of Jellyfin-Library-Helper."""
+
 import sys
 from imdb import Cinemagoer
 import os
 import re
 
 
-def MakeStrFromMovie(movieObj):
+def make_str_from_movie(movieObj):
     return movieObj['title'] + " " + "(" + str(movieObj['year']) + ") " + "[imdbid-tt" + str(movieObj.getID()) + "]"
 
-def GetDir():
+def get_dir():
     while True:
         directory = input("path: ")
         if os.path.exists(directory) and os.path.isdir(directory):
@@ -15,12 +17,12 @@ def GetDir():
         else:
             print("error with your directory, try again")
 
-def PopulateContent(directory_path):
+def populate_content(directory_path):
     return os.listdir(directory_path)
 
 # TODO: make a selection of multiple but not all possible
 # TODO: make reselection of directory possible after finding empty dir
-def ChooseFromContent():
+def choose_from_content():
     all_valid_indicies = []
 
     for i, name in enumerate(content):
@@ -47,28 +49,28 @@ def ChooseFromContent():
         else:
             print("invalid input, try again")
 
-def Renamer(old_name, desired_name):
+def rename(old_name, desired_name):
     original_path = os.path.join(base_directory, old_name)
     desired_path = os.path.join(base_directory, desired_name)
     os.rename(original_path, desired_path)
 
 
-def ProcessMovies(indicies):
+def process_movies(indicies):
     if isinstance(indicies, int):
         name = content[int(indicies)]
         print("processing: ",name)
         rx_movie = ia.search_movie(name, results=1)
-        finished_name = MakeStrFromMovie(rx_movie[0])
+        finished_name = make_str_from_movie(rx_movie[0])
         print("check: ",BASE_URL+rx_movie[0].getID())
-        Renamer(name, finished_name)
+        rename(name, finished_name)
     elif isinstance(indicies, list):
         for i, index in enumerate(indicies):
             name = content[int(index)]
             print("processing: ",name)
             rx_movie = ia.search_movie(name, results=1)
-            finished_name = MakeStrFromMovie(rx_movie[0])
+            finished_name = make_str_from_movie(rx_movie[0])
             print("check: ",BASE_URL+rx_movie[0].getID())
-            Renamer(name, finished_name)
+            rename(name, finished_name)
     else:
         print("unknown argument to be processed")
 
@@ -80,8 +82,8 @@ def ProcessMovies(indicies):
 
 BASE_URL = "https://www.imdb.com/title/tt"
 ia = Cinemagoer()
-base_directory = GetDir()
-content = PopulateContent(base_directory)
+base_directory = get_dir()
+content = populate_content(base_directory)
 
-selection_of_movies = ChooseFromContent()
-ProcessMovies(selection_of_movies)
+selection_of_movies = choose_from_content()
+process_movies(selection_of_movies)

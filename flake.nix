@@ -1,29 +1,29 @@
-# flake.nix
 {
+  description = "flake with FHS environment for Pixi";
+
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = {nixpkgs, ...}: let
-    system = "x86_64-linux";
-    #       ↑ Swap it for your system if needed
-    #       "aarch64-linux" / "x86_64-darwin" / "aarch64-darwin"
-    pkgs = nixpkgs.legacyPackages.${system};
-  in {
-    devShells.${system}.default = pkgs.mkShell {
-
-      env = {};
-
-      packages = with pkgs; [ 
-        python312
-        python312Packages.cinemagoer
-      ];
-
-      shellHook = ''
-        echo "welcome!"
-      '';
-
-    };
-  };
+  outputs =
+    { nixpkgs, flake-utils, ... }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+        fhs = pkgs.buildFHSEnv {
+          name = "jellyfin-library-helper";
+          targetPkgs =
+            ps: with ps; [
+              pixi
+            ];
+          # multiPkgs = ps: with ps; [ ]; # 32-bit libs
+          runScript = "bash";
+        };
+      in
+      {
+        devShells.default = fhs.env;
+      }
+    );
 }
-
