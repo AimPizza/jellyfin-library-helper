@@ -2,6 +2,7 @@
 you can:
 - Rename directories that have a name close enough that the api can recognise it.
 - The directories are currently renamed to [Jellyfins recommendation](https://jellyfin.org/docs/general/server/media/movies/).
+  - [Shows/Series](https://jellyfin.org/docs/general/server/media/shows/) are WIP!
 
 # how to use
 get the required python module

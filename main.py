@@ -9,20 +9,15 @@ from pathlib import Path
 from enum import Enum
 from typing import List
 
+BASE_URL = 'https://www.imdb.com/title/tt'
+TYPE = None
+LIB_PATH = None
+CINEMA = None  # Cinemagoer object
 
-def make_str_from_movie(movieObj):
-    print('movie object:')
-    print(movieObj)
-    return (
-        movieObj['title']
-        + ' '
-        + '('
-        + str(movieObj['year'])
-        + ') '
-        + '[imdbid-tt'
-        + str(movieObj.getID())
-        + ']'
-    )
+
+def format_to_movie_template(title, release_year, id):
+    """Format given data points to movie template."""
+    return title + ' ' + '(' + release_year + ') ' + '[imdbid-tt' + str(id) + ']'
 
 
 def assert_dir_valid(directory: Path) -> bool:
@@ -59,6 +54,7 @@ def choose_from_directory(content: List[str]):
     while True:
         choice = input('the choice is yours: ')
         if choice == 'q':
+            print('quitting..')
             sys.exit()
         elif choice == 'a':
             return relevant_entries
@@ -78,30 +74,68 @@ def rename(old_name, desired_name):
     os.rename(original_path, desired_path)
 
 
-def get_media(content: List[str], index: int):
-    name = content[int(index)]
-    print('processing: ', name)
-    rx_media = CINEMA.search_movie(name, results=1)
-    rx_movie = CINEMA.get_movie(rx_media[0].movieID)
-    finished_name = make_str_from_movie(rx_movie)
-    print('check: ', BASE_URL + rx_movie.getID())
-    confirmation = input('Do you want to rename this file? (y/N): ').strip().lower()
+# TODO: imdb does not work well for shows unfortunately
+def query_from_multiple_entries(name: str) -> int:
+    """Query for a given name and return its ID on a db."""
+    rx_media = CINEMA.search_movie(name, results=5)
+    if TYPE == MEDIA_TYPE.MOVIES:
+        for index, movie in enumerate(rx_media):
+            if movie['kind'] != 'tv series':
+                print(f'{index}: {movie["title"]}')
+    # TODO: implement shows
+    elif TYPE == MEDIA_TYPE.SHOWS:
+        pass
+
+    if not rx_media:
+        print('found nothing :[ (try another name)')
+        sys.exit(1)
+
+    chosen_movie_index = int(input('please choose one: '))
+    return rx_media[chosen_movie_index].movieID
+
+
+def confirm_processing(original_name: str, final_name: str, media_obj):
+    """Ask for confirmation and handle changes before renaming."""
+    # TODO: handle differences between movies and shows (on the media_obj)
+    print(f"""please check:
+    - url: {BASE_URL + media_obj.getID()}
+    - final form: {final_name}""")
+    confirmation = input('Do you want to rename this file? (y/N/c): ').strip().lower()
     if confirmation == 'y' or confirmation == 'yes':
-        rename(name, finished_name)
+        rename(original_name, final_name)
+    elif confirmation == 'c' or confirmation == 'change':
+        final_name = input('manual input: ')
+        rename(original_name, final_name)
     else:
         print('Renaming skipped.')
 
 
-def process_media(content: List[str], indicies):
+# TODO: features that allow speed-processing (full automatic, accepting first entry)
+def handle_media(folder_name: str):
+    """Look up a specific media title and rename directory."""
+    print('processing: ', folder_name)
+    id_to_look_up = query_from_multiple_entries(folder_name)
+    rx_media = CINEMA.get_movie(id_to_look_up)
+    finished_name = format_to_movie_template(
+        rx_media['title'], str(rx_media['year']), rx_media.getID()
+    )
+
+    confirm_processing(
+        original_name=folder_name, final_name=finished_name, media_obj=rx_media
+    )
+
+
+def init_processing(content: List[str], indicies):
     """Handle media based on the dir contents and the selection.
 
     `indicies` may actually be a single index
     """
     if isinstance(indicies, int):
-        get_media(content, index=indicies)  # sorry for ambigous naming
+        index = indicies  # sorry for ambigous naming
+        handle_media(content[index])
     elif isinstance(indicies, list):
         for index in indicies:
-            get_media(content, index)
+            handle_media(content[index])
     else:
         print('unknown argument to be processed')
 
@@ -148,17 +182,8 @@ class MEDIA_TYPE(Enum):
     SHOWS = 2
 
 
-"""
----------------------------------------------------------
-"""
-
-BASE_URL = 'https://www.imdb.com/title/tt'
-TYPE = None
-LIB_PATH = None
-CINEMA = None  # Cinemagoer object
-
-
 def main():
+    """Run the main logic."""
     global LIB_PATH, TYPE, CINEMA
     CINEMA = Cinemagoer()
 
@@ -168,6 +193,11 @@ def main():
         TYPE = MEDIA_TYPE.MOVIES
     elif args.shows:
         TYPE = MEDIA_TYPE.SHOWS
+        # TODO
+        print(
+            'Shows-functionality not properly implemented yet. Please try with passing -m or do manually.'
+        )
+        sys.exit(0)
 
     LIB_PATH = args.path.resolve()
 
@@ -176,7 +206,7 @@ def main():
     dir_content = os.listdir(LIB_PATH)
 
     selection_of_movies = choose_from_directory(dir_content)
-    process_media(dir_content, selection_of_movies)
+    init_processing(dir_content, selection_of_movies)
 
 
 if __name__ == '__main__':
