@@ -13,6 +13,10 @@ place the `main.py` somewhere you can access it (move path can be chosen from wi
 
 `python /path/to/main.py`
 
+**demo**
+
+[![asciicast](https://asciinema.org/a/7F994sMOuG8HYqj184NL3Npj5.svg)](https://asciinema.org/a/7F994sMOuG8HYqj184NL3Npj5)
+
 # disclaimer
 While I try my best to write _okay_ code, I am very much still starting to learn and therefore cannot guarantee failsave operation of the script. 
 While it shouldn't corrupt any files, backups are always essential, especially when interacting with scripts like this.
